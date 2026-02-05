@@ -7,7 +7,7 @@ import os
 
 # ---------------- CONFIG ---------------- #
 
-TOKEN = os.getenv("DISCORD TOKEN HERE")  # Load token securely from environment variable
+TOKEN = os.getenv("DISCORD_TOKEN")  # Load token securely from environment variable
 CHECK_INTERVAL = 60      # seconds for testing; change to 3600 for 1-hour checks
 DAY_SECONDS = 60         # seconds for testing; change to 86400 for 1-day checks
 
@@ -143,3 +143,4 @@ async def on_ready():
     print(f"Logged in as {client.user}")
 
 client.run(TOKEN)
+
