@@ -7,9 +7,9 @@ import os
 
 # ---------------- CONFIG ---------------- #
 
-TOKEN = os.getenv("DISCORD_TOKEN")  # Load token securely from environment variable
-CHECK_INTERVAL = 60      # seconds for testing; change to 3600 for 1-hour checks
-DAY_SECONDS = 60         # seconds for testing; change to 86400 for 1-day checks
+TOKEN = os.getenv("DISCORD_TOKEN")  # Load token securely from Railway
+CHECK_INTERVAL = 60      # 60 seconds for testing; change to 3600 for 1 hour
+DAY_SECONDS = 60         # 60 seconds for testing; change to 86400 for 1 day
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
@@ -17,6 +17,7 @@ tree = app_commands.CommandTree(client)
 
 # ---------------- DATABASE ---------------- #
 
+# Use a simple SQLite DB file Railway can write to
 db = sqlite3.connect("plants.db", check_same_thread=False)
 cursor = db.cursor()
 cursor.execute("""
@@ -112,7 +113,7 @@ async def status(interaction: discord.Interaction):
 
 async def reminder_loop():
     await client.wait_until_ready()
-    while not client.is_closed():
+    while True:
         cursor.execute("""
             SELECT thread_id, interval_days, last_watered, reminded
             FROM plants
@@ -124,14 +125,17 @@ async def reminder_loop():
             if now() >= last_watered + (interval_days * DAY_SECONDS):
                 thread = client.get_channel(thread_id)
                 if thread:
-                    await thread.send(
-                        "🌿 **Plant check reminder!** Time to check soil moisture 💧"
-                    )
-                    cursor.execute(
-                        "UPDATE plants SET reminded=1 WHERE thread_id=?",
-                        (thread_id,)
-                    )
-                    db.commit()
+                    try:
+                        await thread.send(
+                            "🌿 **Plant check reminder!** Time to check soil moisture 💧"
+                        )
+                        cursor.execute(
+                            "UPDATE plants SET reminded=1 WHERE thread_id=?",
+                            (thread_id,)
+                        )
+                        db.commit()
+                    except Exception as e:
+                        print(f"Error sending reminder: {e}")
         await asyncio.sleep(CHECK_INTERVAL)
 
 # ---------------- BOT READY ---------------- #
@@ -143,4 +147,3 @@ async def on_ready():
     print(f"Logged in as {client.user}")
 
 client.run(TOKEN)
-
